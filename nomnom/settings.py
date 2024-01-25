@@ -82,7 +82,7 @@ class AppConfig:
     class OAUTH:
         key = var()
         secret = var()
-        backend = var("nomnom.social_core.ClydeOAuth2")
+        backend = var("glasgow2024.social_auth.clyde.ClydeOAuth2")
 
     oauth = group(OAUTH)
 
