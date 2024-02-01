@@ -1,13 +1,13 @@
 from collections.abc import Iterable
 from typing import Any
 
-import django.contrib.auth.forms
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.generic import DetailView, ListView, RedirectView
 
 from nominate import models
+from nominate.apps import convention_configuration
 
 
 class ElectionView(ListView):
@@ -16,7 +16,10 @@ class ElectionView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if settings.NOMNOM_ALLOW_USERNAME_LOGIN_FOR_MEMBERS:
-            context["form"] = django.contrib.auth.forms.AuthenticationForm()
+            authentication_form_class = (
+                convention_configuration().get_authentication_form_class()
+            )
+            context["form"] = authentication_form_class()
 
         return context
 

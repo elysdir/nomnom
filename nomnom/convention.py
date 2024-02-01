@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import TypedDict
 from urllib.parse import urlparse
 
+from django.forms import Form
 from django.http import HttpRequest
+from django.utils.module_loading import import_string
 from django.utils.timezone import is_aware, make_aware
 from environ import bool_var, config, group, to_config, var
 
@@ -160,6 +162,7 @@ class ConventionConfiguration:
     voting_group: str = "Voter"
     urls_app_name: str | None = None
     authentication_backends: list[str] = field(default_factory=list)
+    authentication_form: str | type[Form] | None = None
 
     def __post_init__(self):
         # Ensure that the nomination eligibility cutoff is a timezone-aware datetime, if set.
@@ -182,3 +185,15 @@ class ConventionConfiguration:
 
     def get_registration_email(self, request: HttpRequest | None = None) -> str:
         return self.registration_email
+
+    def get_authentication_form_class(self) -> type[Form]:
+        if self.authentication_form is None:
+            # deferred in here because this has to be invoked after apps are ready
+            import django.contrib.auth.forms
+
+            self.authentication_form = django.contrib.auth.forms.AuthenticationForm
+
+        if isinstance(self.authentication_form, str):
+            self.authentication_form = import_string(self.authentication_form)
+
+        return self.authentication_form

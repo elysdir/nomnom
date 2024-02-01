@@ -21,6 +21,7 @@ convention = ConventionConfiguration(
         "glasgow2024.auth.GlasgowMemberAuthBackend",
         system_configuration.oauth.backend,
     ],
+    authentication_form="glasgow2024.forms.Glasgow2024AuthenticationForm",
     hugo_help_email="hugo-help@glasgow2024.org",
     hugo_admin_email="hugo-admin@glasgow2024.org",
     registration_email="registration@glasgow2024.org",
