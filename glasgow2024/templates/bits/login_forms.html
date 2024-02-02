@@ -1,15 +1,21 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
 {% if USERNAME_LOGIN %}
-    <form method="POST"
-          action="{% url "login" %}?next={{ request.path }}"
-          accept-charset="UTF-8">
-        {% bootstrap_form form %}
-        {% csrf_token %}
-        <div>
-            <input class="btn btn-primary login-btn" type="submit" value="Login">
-        </div>
-    </form>
+    <div class="gap-2 mb-5">
+        <form method="POST"
+              action="{% url "convention:login" %}?next={{ request.path }}"
+              accept-charset="UTF-8">
+            {% bootstrap_form form %}
+            {% csrf_token %}
+            <div>
+                <input class="btn btn-primary login-btn" type="submit" value="Login">
+            </div>
+            {% url 'convention:password_reset' as password_reset_url %}
+            <div class="password-reset-link">
+                <a href="{{ password_reset_url }}">{% translate 'Forgotten your password or username?' %}</a>
+            </div>
+        </form>
+    </div>
 {% endif %}
 <div class="d-inline-flex gap-2 mb-5">
     <a href="{% url "social:begin" "clyde" %}?next={{ request.path }}">
