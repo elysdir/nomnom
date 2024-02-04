@@ -8,7 +8,7 @@ from nomnom.convention import (
 
 theme = ConventionTheme(
     stylesheets="css/glasgow2024.css",
-    font_urls="https://fonts.googleapis.com/css2?family=Roboto&family=Roboto+Slab&family=Gruppo&display=swap",
+    font_urls="css/fonts.css",
 )
 
 convention = ConventionConfiguration(
