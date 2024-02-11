@@ -190,6 +190,28 @@ class NominationViewInvariants(TestCase):
         assert response.status_code == self.success_status_code
         assert models.Nomination.objects.count() == 1
 
+    def test_submitting_valid_data_retains_existing_records_for_overlaps(self):
+        n1, n2 = factories.NominationFactory.create_batch(
+            2,
+            category=self.c1,
+            nominator=self.user.convention_profile,
+        )
+        valid_data = {
+            f"{self.c1.id}-0-field_1": n1.field_1,
+            f"{self.c1.id}-0-field_2": n1.field_2,
+            f"{self.c1.id}-1-field_1": "t2-new",
+            f"{self.c1.id}-1-field_2": "t2-new",
+        }
+
+        response = self.submit_nominations(valid_data)
+        assert response.status_code == self.success_status_code
+        assert models.Nomination.objects.count() == 2
+
+        # this is the in-depth part; we are going to confirm that one of the two PKs for the
+        # nomination records matches.
+        db_ids = models.Nomination.objects.values_list("id", flat=True)
+        assert n1.id in db_ids
+
     def test_submitting_invalid_data_does_not_save(self):
         # Define your initial form data that is invalid
         invalid_data = {

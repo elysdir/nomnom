@@ -56,15 +56,37 @@ class NominationView(NominatorView):
         form = NominationForm(categories=list(self.categories()), data=request.POST)
 
         if form.is_valid():
-            # first, we clear all of the existing nominations for this user and election; they've
-            # submitted a new ballot, so we're going to start from scratch.
-            profile.nomination_set.filter(category__election=self.election()).delete()
+            # We would clear out the existing nominations for this user, but we want to retain
+            # existing nominations that are included in the new ballot, so that we don't lose the
+            # admin's work to canonicalize them, or the IP address and creation times.
+            #
+            # So, we find the existing ones, and the save logic gets a bit more complicated. We look
+            # at the signatures of our new nominations, and only delete the nominations that are
+            # missing now.
+            existing_nominations = profile.nomination_set.filter(
+                category__election=self.election()
+            )
+
+            signatures = {n.signature: n for n in existing_nominations}
 
             # now, we're going to iterate through the formsets and save the nominations
+            to_create: list[models.Nomination] = []
+
             for nomination in form.cleaned_data["nominations"]:
                 nomination.nominator = profile
                 nomination.nomination_ip_address = client_ip_address
-            models.Nomination.objects.bulk_create(form.cleaned_data["nominations"])
+                if nomination.signature not in signatures:
+                    # only create them if we don't have this one already
+                    to_create.append(nomination)
+                else:
+                    del signatures[
+                        nomination.signature
+                    ]  # only allow one match to be retained
+
+            models.Nomination.objects.bulk_create(to_create)
+            for to_remove in signatures.values():
+                to_remove.delete()
+
             messages.success(request, "Your set of nominations was saved")
 
             if request.htmx:

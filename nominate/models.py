@@ -6,9 +6,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.utils.text import slugify
 from django.utils.timezone import make_aware
+from django.utils.translation import gettext, pgettext
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext
 from django_fsm import FSMField, transition
 from markdown import markdown
 
@@ -320,6 +321,14 @@ class Nomination(models.Model):
         ]
         return dict(zip(self.category.field_names, field_values))
 
+    @property
+    def signature(self) -> str:
+        field_values = [self.field_1, self.field_2, self.field_3][
+            : self.category.fields
+        ]
+        field_slugs = [slugify(f) for f in field_values]
+        return "::".join(field_slugs)
+
     def pretty_fields(self) -> str:
         fields = [self.field_1, self.field_2, self.field_3][: self.category.fields]
         field_names = [
@@ -329,8 +338,15 @@ class Nomination(models.Model):
         ][: self.category.fields]
         return ", ".join([f"{f}: {n}" for f, n in zip(field_names, fields)])
 
+    @property
+    def nominator_name(self) -> str:
+        try:
+            return self.nominator.display_name
+        except NominatingMemberProfile.DoesNotExist:
+            return gettext("Unknown")
+
     def __str__(self):
-        return f"{self.category} by {self.nominator.display_name} on {self.nomination_date}"
+        return f"{self.category} by {self.nominator_name} on {self.nomination_date}"
 
 
 class NominationAdminData(models.Model):
