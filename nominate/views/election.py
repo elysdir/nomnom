@@ -26,6 +26,7 @@ class ElectionView(ListView):
         # annotate our elections with some info
         for election in query_set:
             election.is_open_for_user = election.is_open_for(self.request.user)
+            election.nominations_have_closed = election.nominations_have_closed()
             election.user_state = election.describe_state(user=self.request.user)
             election.user_pretty_state = election.pretty_state(user=self.request.user)
 

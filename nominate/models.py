@@ -100,34 +100,40 @@ class Election(models.Model):
         source=[STATE.PRE_NOMINATION, STATE.NOMINATIONS_OPEN],
         target=STATE.NOMINATION_PREVIEW,
     )
-    def preview_nominations(self): ...
+    def preview_nominations(self):
+        ...
 
     @transition(
         "state",
         source=[STATE.NOMINATION_PREVIEW, STATE.PRE_NOMINATION],
         target=STATE.NOMINATIONS_OPEN,
     )
-    def open_nominations(self): ...
+    def open_nominations(self):
+        ...
 
     @transition("state", source=STATE.NOMINATIONS_OPEN, target=STATE.NOMINATIONS_CLOSED)
-    def close_nominations(self): ...
+    def close_nominations(self):
+        ...
 
     @transition(
         "state",
         source=[STATE.NOMINATIONS_CLOSED, STATE.VOTING],
         target=STATE.VOTING_PREVIEW,
     )
-    def preview_voting(self): ...
+    def preview_voting(self):
+        ...
 
     @transition(
         "state",
         source=[STATE.NOMINATIONS_CLOSED, STATE.VOTING_PREVIEW],
         target=STATE.VOTING,
     )
-    def open_voting(self): ...
+    def open_voting(self):
+        ...
 
     @transition("state", source=STATE.VOTING, target=STATE.VOTING_CLOSED)
-    def close_voting(self): ...
+    def close_voting(self):
+        ...
 
     @property
     def is_nominating(self):
@@ -135,7 +141,7 @@ class Election(models.Model):
 
     @property
     def is_voting(self):
-        return self.state == "voting"
+        return self.state == self.STATE.VOTING
 
     def describe_state(self, user: AbstractBaseUser | None = None) -> str:
         if user is None or user.is_anonymous:
@@ -177,6 +183,30 @@ class Election(models.Model):
 
             case _:
                 return f"The election is not configured: {state}"
+
+    # What does a user see when they visit the election page?
+    #
+    # * If the user is not logged in, they see a message indicating which elections _exist_ and informing them that they need to log in to participate.
+    # * If the user is logged in, they see a message indicating which elections are open and what they can do.
+    #    * if the election is open for nominations, they see a message indicating that they can nominate.
+    #    * if the election is open for preview nominations, they see a message indicating that they can preview nominations if they have the right permissions.
+    #    * if the election is past the nomination phase, they see a message indicating that nominations are closed, with a link to view their nominations.
+    #    * if the election is open for voting, they see a message indicating that they can vote.
+    #    * if the election is open for preview voting, they see a message indicating that they can preview voting if they have the right permissions.
+    #    * if the election is past the voting phase, they see a message indicating that voting is closed, with a link to view their votes.
+    #
+    # "Open" is both an absolute state -- the election is "fully open" -- and a conditional one, where it is open for a particular user. In the latter case we do not want to show the user the "open" message if they cannot participate; it should "appear" closed to them.
+    #
+    # | State              | User is not logged in      | User is logged in     | User has preview nomination | User has preview voting |
+    # |--------------------|----------------------------|-----------------------|-----------------------------|-------------------------|
+    # | Pre-Nomination     | Elections exist            | Elections exist       | Elections exist             | Elections exist         |
+    # | Nomination Preview | Log in to nominate         | Election looks closed | Can Nominate                | Voting is closed        |
+    # | Nominations Open   | Log in to nominate         | Can nominate          | Can Nominate                | Voting is closed        |
+    # | Nominations Closed | Log in to view nominations | View nominations      | View nominations            | Voting is closed        |
+    # | Voting Preview     | Log in to vote             | Voting is closed      | View nominations            | Can Vote                |
+    # | Voting             | Log in to vote             | Can vote              | View nominations            | Can Vote                |
+    # | Voting Closed      | Log in to view votes       | View votes            | View nominations            | View votes              |
+    #
 
     @property
     def is_open(self) -> bool:
